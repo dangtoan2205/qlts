@@ -118,7 +118,7 @@ const Dashboard = () => {
       </div>
 
       <Row gutter={[24, 24]} className="dashboard-grid">
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
           <Card className="stats-card">
             <Statistic
               title="Tổng số tài sản"
@@ -129,7 +129,7 @@ const Dashboard = () => {
           </Card>
         </Col>
         
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
           <Card className="stats-card">
             <Statistic
               title="Tài sản đang sử dụng"
@@ -140,7 +140,7 @@ const Dashboard = () => {
           </Card>
         </Col>
         
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
           <Card className="stats-card">
             <Statistic
               title="Tài sản khả dụng"
@@ -151,7 +151,7 @@ const Dashboard = () => {
           </Card>
         </Col>
         
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
           <Card className="stats-card">
             <Statistic
               title="Tổng số nhân viên"
