@@ -109,7 +109,6 @@ const Dashboard = () => {
     );
   }
 
-<<<<<<< HEAD
   const tabItems = [
     {
       key: 'overview',
@@ -122,103 +121,89 @@ const Dashboard = () => {
       children: (
         <>
           <Row gutter={[24, 24]} className="dashboard-grid">
-=======
-  return (
-    <div>
-      <div className="page-header">
-        <Title level={2} className="page-title">
-          Tổng quan hệ thống
-        </Title>
-        <p className="page-description">
-          Thống kê và theo dõi tài sản IT trong công ty
-        </p>
-      </div>
+            <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Tổng số tài sản"
+                  value={stats.totalAssets}
+                  prefix={<LaptopOutlined />}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+            
+            <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Tài sản đang sử dụng"
+                  value={stats.assignedAssets}
+                  prefix={<CheckCircleOutlined />}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            
+            <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Tài sản khả dụng"
+                  value={stats.availableAssets}
+                  prefix={<LaptopOutlined />}
+                  valueStyle={{ color: '#faad14' }}
+                />
+              </Card>
+            </Col>
+            
+            <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Tổng số nhân viên"
+                  value={stats.totalEmployees}
+                  prefix={<TeamOutlined />}
+                  valueStyle={{ color: '#722ed1' }}
+                />
+              </Card>
+            </Col>
+          </Row>
 
-      <Row gutter={[24, 24]} className="dashboard-grid">
->>>>>>> 25fd682eb4de00ff14b35f6b12fad031d6952c0c
-        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
-          <Card className="stats-card">
-            <Statistic
-              title="Tổng số tài sản"
-              value={stats.totalAssets}
-              prefix={<LaptopOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        
-        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
-          <Card className="stats-card">
-            <Statistic
-              title="Tài sản đang sử dụng"
-              value={stats.assignedAssets}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        
-        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
-          <Card className="stats-card">
-            <Statistic
-              title="Tài sản khả dụng"
-              value={stats.availableAssets}
-              prefix={<LaptopOutlined />}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
-        
-        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
-          <Card className="stats-card">
-            <Statistic
-              title="Tổng số nhân viên"
-              value={stats.totalEmployees}
-              prefix={<TeamOutlined />}
-              valueStyle={{ color: '#722ed1' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[24, 24]}>
-        <Col xs={24} lg={16}>
-          <Card 
-            title="Bàn giao tài sản gần đây" 
-            extra={<SwapOutlined />}
-            className="card-container"
-          >
-            <Table
-              columns={assignmentColumns}
-              dataSource={recentAssignments}
-              rowKey="id"
-              pagination={false}
-              size="small"
-            />
-          </Card>
-        </Col>
-        
-        <Col xs={24} lg={8}>
-          <Card 
-            title="Thống kê nhanh" 
-            className="card-container"
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div className="stats-number" style={{ color: '#52c41a' }}>
-                {stats.activeAssignments}
-              </div>
-              <p className="stats-title">Bàn giao đang hoạt động</p>
-              
-              <div style={{ marginTop: '24px' }}>
-                <div className="stats-number" style={{ color: '#1890ff', fontSize: '24px' }}>
-                  {stats.totalAssets > 0 ? Math.round((stats.assignedAssets / stats.totalAssets) * 100) : 0}%
+          <Row gutter={[24, 24]}>
+            <Col xs={24} lg={16}>
+              <Card 
+                title="Bàn giao tài sản gần đây" 
+                extra={<SwapOutlined />}
+                className="card-container"
+              >
+                <Table
+                  columns={assignmentColumns}
+                  dataSource={recentAssignments}
+                  rowKey="id"
+                  pagination={false}
+                  size="small"
+                />
+              </Card>
+            </Col>
+            
+            <Col xs={24} lg={8}>
+              <Card 
+                title="Thống kê nhanh" 
+                className="card-container"
+              >
+                <div style={{ textAlign: 'center' }}>
+                  <div className="stats-number" style={{ color: '#52c41a' }}>
+                    {stats.activeAssignments}
+                  </div>
+                  <p className="stats-title">Bàn giao đang hoạt động</p>
+                  
+                  <div style={{ marginTop: '24px' }}>
+                    <div className="stats-number" style={{ color: '#1890ff', fontSize: '24px' }}>
+                      {stats.totalAssets > 0 ? Math.round((stats.assignedAssets / stats.totalAssets) * 100) : 0}%
+                    </div>
+                    <p className="stats-title">Tỷ lệ sử dụng tài sản</p>
+                  </div>
                 </div>
-                <p className="stats-title">Tỷ lệ sử dụng tài sản</p>
-              </div>
-            </div>
-          </Card>
-        </Col>
-      </Row>
+              </Card>
+            </Col>
+          </Row>
         </>
       ),
     },
