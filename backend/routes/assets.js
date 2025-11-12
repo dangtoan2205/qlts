@@ -1,7 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const pool = require('../config/database');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin, requireDeletePermission, requireEditPermission, requireDeletePermissionByEntity } = require('../middleware/auth');
+const { logActivity, generateDescription } = require('../utils/activityLogger');
 
 const router = express.Router();
 
@@ -132,9 +133,24 @@ router.post('/', [
     `, [asset_code, asset_name, asset_type_id, brand, model, serial_number, 
         purchase_date, purchase_price, location, notes]);
 
+    const newAsset = result.rows[0];
+
+    // Ghi log hoạt động
+    await logActivity({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'create',
+      entityType: 'asset',
+      entityId: newAsset.id,
+      entityName: `${newAsset.asset_code} - ${newAsset.asset_name}`,
+      newValues: newAsset,
+      description: generateDescription('create', 'asset', `${newAsset.asset_code} - ${newAsset.asset_name}`),
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
+
     res.status(201).json({
       message: 'Tạo tài sản thành công',
-      asset: result.rows[0]
+      asset: newAsset
     });
   } catch (error) {
     console.error('Create asset error:', error);
@@ -145,7 +161,7 @@ router.post('/', [
 // Cập nhật tài sản
 router.put('/:id', [
   authenticateToken,
-  requireAdmin,
+  requireEditPermission('asset'),
   body('asset_name').notEmpty().withMessage('Tên tài sản là bắt buộc'),
   body('asset_type_id').isInt().withMessage('Loại tài sản không hợp lệ')
 ], async (req, res) => {
@@ -161,6 +177,13 @@ router.put('/:id', [
       purchase_date, purchase_price, status, location, notes
     } = req.body;
 
+    // Lấy giá trị cũ trước khi cập nhật
+    const oldAssetResult = await pool.query('SELECT * FROM assets WHERE id = $1', [id]);
+    if (oldAssetResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy tài sản' });
+    }
+    const oldAsset = oldAssetResult.rows[0];
+
     const result = await pool.query(`
       UPDATE assets 
       SET asset_name = $1, asset_type_id = $2, brand = $3, model = $4, 
@@ -175,9 +198,25 @@ router.put('/:id', [
       return res.status(404).json({ message: 'Không tìm thấy tài sản' });
     }
 
+    const updatedAsset = result.rows[0];
+
+    // Ghi log hoạt động
+    await logActivity({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'update',
+      entityType: 'asset',
+      entityId: updatedAsset.id,
+      entityName: `${updatedAsset.asset_code} - ${updatedAsset.asset_name}`,
+      oldValues: oldAsset,
+      newValues: updatedAsset,
+      description: generateDescription('update', 'asset', `${updatedAsset.asset_code} - ${updatedAsset.asset_name}`),
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
+
     res.json({
       message: 'Cập nhật tài sản thành công',
-      asset: result.rows[0]
+      asset: updatedAsset
     });
   } catch (error) {
     console.error('Update asset error:', error);
@@ -186,9 +225,16 @@ router.put('/:id', [
 });
 
 // Xóa tài sản
-router.delete('/:id', [authenticateToken, requireAdmin], async (req, res) => {
+router.delete('/:id', [authenticateToken, requireDeletePermissionByEntity('asset')], async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Lấy thông tin tài sản trước khi xóa để ghi log
+    const assetResult = await pool.query('SELECT * FROM assets WHERE id = $1', [id]);
+    if (assetResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy tài sản' });
+    }
+    const asset = assetResult.rows[0];
 
     // Kiểm tra tài sản có đang được bàn giao không
     const activeAssignments = await pool.query(
@@ -207,6 +253,19 @@ router.delete('/:id', [authenticateToken, requireAdmin], async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Không tìm thấy tài sản' });
     }
+
+    // Ghi log hoạt động
+    await logActivity({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'delete',
+      entityType: 'asset',
+      entityId: asset.id,
+      entityName: `${asset.asset_code} - ${asset.asset_name}`,
+      oldValues: asset,
+      description: generateDescription('delete', 'asset', `${asset.asset_code} - ${asset.asset_name}`),
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
 
     res.json({ message: 'Xóa tài sản thành công' });
   } catch (error) {

@@ -66,6 +66,19 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Bảng quyền chi tiết cho từng user
+CREATE TABLE IF NOT EXISTS user_permissions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    entity_type VARCHAR(50) NOT NULL, -- asset, employee, assignment
+    can_view BOOLEAN DEFAULT true,
+    can_edit BOOLEAN DEFAULT false,
+    can_delete BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, entity_type)
+);
+
 -- Insert dữ liệu mẫu cho loại tài sản
 INSERT INTO asset_types (type_name, description) VALUES
 ('Case PC', 'Thùng máy tính để bàn'),
@@ -77,9 +90,29 @@ INSERT INTO asset_types (type_name, description) VALUES
 ('MacBook', 'MacBook của Apple'),
 ('Thiết bị khác', 'Các thiết bị IT khác');
 
+-- Bảng lịch sử thay đổi (activity logs)
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    username VARCHAR(50) NOT NULL,
+    action_type VARCHAR(50) NOT NULL, -- create, update, delete, assign, return
+    entity_type VARCHAR(50) NOT NULL, -- asset, employee, assignment
+    entity_id INTEGER,
+    entity_name VARCHAR(255),
+    old_values JSONB,
+    new_values JSONB,
+    description TEXT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Insert admin user mặc định
 INSERT INTO users (username, email, password_hash, role) VALUES
 ('admin', 'admin@company.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
+
+-- Insert user acc
+INSERT INTO users (username, email, password_hash, role) VALUES
+('acc', 'acc@company.com', '$2a$10$.iTRzZfEMKKSVL9q.M1WQOZIXKO1YPxVcnwvl1YMn5MLHu06AQUFK', 'user');
 
 -- Tạo indexes để tối ưu hiệu suất
 CREATE INDEX idx_assets_asset_code ON assets(asset_code);
@@ -88,3 +121,8 @@ CREATE INDEX idx_asset_assignments_asset_id ON asset_assignments(asset_id);
 CREATE INDEX idx_asset_assignments_employee_id ON asset_assignments(employee_id);
 CREATE INDEX idx_asset_assignments_status ON asset_assignments(status);
 CREATE INDEX idx_employees_employee_id ON employees(employee_id);
+CREATE INDEX idx_activity_logs_user_id ON activity_logs(user_id);
+CREATE INDEX idx_activity_logs_entity_type ON activity_logs(entity_type);
+CREATE INDEX idx_activity_logs_created_at ON activity_logs(created_at);
+CREATE INDEX idx_user_permissions_user_id ON user_permissions(user_id);
+CREATE INDEX idx_user_permissions_entity_type ON user_permissions(entity_type);

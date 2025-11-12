@@ -69,7 +69,7 @@ const Sidebar = ({ collapsed }) => {
         fontWeight: 'bold',
         fontSize: collapsed ? '14px' : '16px'
       }}>
-        {collapsed ? 'QLTS' : 'QLTS Asset'}
+        {collapsed ? 'QLTS' : 'QLTS SETA'}
       </div>
       
       <Menu

@@ -17,6 +17,8 @@ app.use('/api/employees', require('./routes/employees'));
 app.use('/api/assets', require('./routes/assets'));
 app.use('/api/asset-types', require('./routes/assetTypes'));
 app.use('/api/assignments', require('./routes/assignments'));
+app.use('/api/activity-logs', require('./routes/activityLogs'));
+app.use('/api/users', require('./routes/users'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -23,10 +23,13 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import EmployeeDetail from './EmployeeDetail';
+import { useAuth } from '../contexts/AuthContext';
+import { canEdit, canDelete, canCreate } from '../utils/permissions';
 
 const { Title } = Typography;
 
 const EmployeeManagement = () => {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -178,23 +181,27 @@ const EmployeeManagement = () => {
           >
             Xem chi tiết
           </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa nhân viên này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Xóa
+          {canEdit(user, 'employee') && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              Sửa
             </Button>
-          </Popconfirm>
+          )}
+          {canDelete(user, 'employee') && (
+            <Popconfirm
+              title="Bạn có chắc chắn muốn xóa nhân viên này?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button type="link" danger icon={<DeleteOutlined />}>
+                Xóa
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -248,15 +255,17 @@ const EmployeeManagement = () => {
           </Row>
         </Form>
 
-        <div style={{ marginBottom: 16, textAlign: 'right' }}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-          >
-            Thêm nhân viên
-          </Button>
-        </div>
+        {canCreate(user, 'employee') && (
+          <div style={{ marginBottom: 16, textAlign: 'right' }}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAdd}
+            >
+              Thêm nhân viên
+            </Button>
+          </div>
+        )}
 
         <Table
           columns={columns}

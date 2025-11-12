@@ -49,6 +49,12 @@ router.post('/login', [
       { expiresIn: '24h' }
     );
 
+    // Lấy permissions của user
+    const permissionsResult = await pool.query(
+      'SELECT * FROM user_permissions WHERE user_id = $1',
+      [user.id]
+    );
+
     res.json({
       message: 'Đăng nhập thành công',
       token,
@@ -56,7 +62,8 @@ router.post('/login', [
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        permissions: permissionsResult.rows
       }
     });
   } catch (error) {
@@ -68,12 +75,19 @@ router.post('/login', [
 // Lấy thông tin user hiện tại
 router.get('/me', authenticateToken, async (req, res) => {
   try {
+    // Lấy permissions của user
+    const permissionsResult = await pool.query(
+      'SELECT * FROM user_permissions WHERE user_id = $1',
+      [req.user.id]
+    );
+
     res.json({
       user: {
         id: req.user.id,
         username: req.user.username,
         email: req.user.email,
-        role: req.user.role
+        role: req.user.role,
+        permissions: permissionsResult.rows
       }
     });
   } catch (error) {

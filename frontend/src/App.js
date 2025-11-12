@@ -8,6 +8,8 @@ import Dashboard from './components/Dashboard';
 import AssetManagement from './components/AssetManagement';
 import EmployeeManagement from './components/EmployeeManagement';
 import AssignmentManagement from './components/AssignmentManagement';
+import ActivityLog from './components/ActivityLog';
+import Settings from './components/Settings';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
@@ -41,6 +43,7 @@ const AppLayout = () => {
             <Route path="/assets" element={<AssetManagement />} />
             <Route path="/employees" element={<EmployeeManagement />} />
             <Route path="/assignments" element={<AssignmentManagement />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </Content>
       </Layout>

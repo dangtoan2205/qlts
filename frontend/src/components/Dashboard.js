@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Statistic, Table, Tag, Typography, Spin } from 'antd';
+import { Row, Col, Card, Statistic, Table, Tag, Typography, Spin, Tabs } from 'antd';
 import { 
   LaptopOutlined, 
   TeamOutlined, 
   SwapOutlined, 
-  CheckCircleOutlined 
+  CheckCircleOutlined,
+  BellOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
+import ActivityLog from './ActivityLog';
 
 const { Title } = Typography;
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState({
     totalAssets: 0,
     assignedAssets: 0,
@@ -106,19 +109,19 @@ const Dashboard = () => {
     );
   }
 
-  return (
-    <div>
-      <div className="page-header">
-        <Title level={2} className="page-title">
-          Tổng quan hệ thống
-        </Title>
-        <p className="page-description">
-          Thống kê và theo dõi tài sản IT trong công ty
-        </p>
-      </div>
-
-      <Row gutter={[24, 24]} className="dashboard-grid">
-        <Col xs={24} sm={12} lg={6}>
+  const tabItems = [
+    {
+      key: 'overview',
+      label: (
+        <span>
+          <LaptopOutlined />
+          Tổng quan
+        </span>
+      ),
+      children: (
+        <>
+          <Row gutter={[24, 24]} className="dashboard-grid">
+        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
           <Card className="stats-card">
             <Statistic
               title="Tổng số tài sản"
@@ -129,7 +132,7 @@ const Dashboard = () => {
           </Card>
         </Col>
         
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
           <Card className="stats-card">
             <Statistic
               title="Tài sản đang sử dụng"
@@ -140,7 +143,7 @@ const Dashboard = () => {
           </Card>
         </Col>
         
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
           <Card className="stats-card">
             <Statistic
               title="Tài sản khả dụng"
@@ -151,7 +154,7 @@ const Dashboard = () => {
           </Card>
         </Col>
         
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={6} style={{ maxWidth: '100%' }}>
           <Card className="stats-card">
             <Statistic
               title="Tổng số nhân viên"
@@ -201,6 +204,40 @@ const Dashboard = () => {
           </Card>
         </Col>
       </Row>
+        </>
+      ),
+    },
+    {
+      key: 'activity',
+      label: (
+        <span>
+          <BellOutlined />
+          Lịch sử thay đổi
+        </span>
+      ),
+      children: <ActivityLog />,
+    },
+  ];
+
+  return (
+    <div>
+      <div className="page-header">
+        <Title level={2} className="page-title">
+          Tổng quan hệ thống
+        </Title>
+        <p className="page-description">
+          Thống kê và theo dõi tài sản IT trong công ty
+        </p>
+      </div>
+
+      <Card className="card-container">
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={tabItems}
+          size="large"
+        />
+      </Card>
     </div>
   );
 };

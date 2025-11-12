@@ -65,11 +65,21 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    try {
+      const response = await axios.get('/api/auth/me');
+      setUser(response.data.user);
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
   const value = {
     user,
     loading,
     login,
-    logout
+    logout,
+    refreshUser
   };
 
   return (

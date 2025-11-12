@@ -28,12 +28,15 @@ import {
 import axios from 'axios';
 import dayjs from 'dayjs';
 import AssetHistory from './AssetHistory';
+import { useAuth } from '../contexts/AuthContext';
+import { canEdit, canDelete, canCreate } from '../utils/permissions';
 
 const { Title } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 const AssetManagement = () => {
+  const { user } = useAuth();
   const [assets, setAssets] = useState([]);
   const [assetTypes, setAssetTypes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -225,23 +228,27 @@ const AssetManagement = () => {
           >
             Lịch sử
           </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa tài sản này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Xóa
+          {canEdit(user, 'asset') && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              Sửa
             </Button>
-          </Popconfirm>
+          )}
+          {canDelete(user, 'asset') && (
+            <Popconfirm
+              title="Bạn có chắc chắn muốn xóa tài sản này?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button type="link" danger icon={<DeleteOutlined />}>
+                Xóa
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -315,15 +322,17 @@ const AssetManagement = () => {
           </Row>
         </Form>
 
-        <div style={{ marginBottom: 16, textAlign: 'right' }}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-          >
-            Thêm tài sản
-          </Button>
-        </div>
+        {canCreate(user, 'asset') && (
+          <div style={{ marginBottom: 16, textAlign: 'right' }}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAdd}
+            >
+              Thêm tài sản
+            </Button>
+          </div>
+        )}
 
         <Table
           columns={columns}

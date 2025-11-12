@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const pool = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { logActivity, generateDescription } = require('../utils/activityLogger');
 
 const router = express.Router();
 
@@ -137,9 +138,37 @@ router.post('/', [
 
       await client.query('COMMIT');
 
+      const assignment = assignmentResult.rows[0];
+
+      // Lấy thông tin tài sản và nhân viên để ghi log
+      const assetInfo = await pool.query(
+        'SELECT asset_code, asset_name FROM assets WHERE id = $1',
+        [asset_id]
+      );
+      const employeeInfo = await pool.query(
+        'SELECT employee_id, full_name FROM employees WHERE id = $1',
+        [employee_id]
+      );
+
+      const assetName = assetInfo.rows[0] ? `${assetInfo.rows[0].asset_code} - ${assetInfo.rows[0].asset_name}` : '';
+      const employeeName = employeeInfo.rows[0] ? `${employeeInfo.rows[0].employee_id} - ${employeeInfo.rows[0].full_name}` : '';
+
+      // Ghi log hoạt động
+      await logActivity({
+        userId: req.user.id,
+        username: req.user.username,
+        actionType: 'assign',
+        entityType: 'assignment',
+        entityId: assignment.id,
+        entityName: `Bàn giao ${assetName} cho ${employeeName}`,
+        newValues: assignment,
+        description: `Bàn giao tài sản ${assetName} cho nhân viên ${employeeName}`,
+        ipAddress: req.ip || req.connection.remoteAddress
+      });
+
       res.status(201).json({
         message: 'Bàn giao tài sản thành công',
-        assignment: assignmentResult.rows[0]
+        assignment: assignment
       });
     } catch (error) {
       await client.query('ROLLBACK');
@@ -201,9 +230,37 @@ router.put('/:id/return', [
 
       await client.query('COMMIT');
 
+      const returnedAssignment = updatedAssignment.rows[0];
+
+      // Lấy thông tin tài sản và nhân viên để ghi log
+      const assetInfo = await pool.query(
+        'SELECT asset_code, asset_name FROM assets WHERE id = $1',
+        [assignment.asset_id]
+      );
+      const employeeInfo = await pool.query(
+        'SELECT employee_id, full_name FROM employees WHERE id = $1',
+        [assignment.employee_id]
+      );
+
+      const assetName = assetInfo.rows[0] ? `${assetInfo.rows[0].asset_code} - ${assetInfo.rows[0].asset_name}` : '';
+      const employeeName = employeeInfo.rows[0] ? `${employeeInfo.rows[0].employee_id} - ${employeeInfo.rows[0].full_name}` : '';
+
+      // Ghi log hoạt động
+      await logActivity({
+        userId: req.user.id,
+        username: req.user.username,
+        actionType: 'return',
+        entityType: 'assignment',
+        entityId: returnedAssignment.id,
+        entityName: `Trả lại ${assetName} từ ${employeeName}`,
+        newValues: returnedAssignment,
+        description: `Trả lại tài sản ${assetName} từ nhân viên ${employeeName}`,
+        ipAddress: req.ip || req.connection.remoteAddress
+      });
+
       res.json({
         message: 'Trả tài sản thành công',
-        assignment: updatedAssignment.rows[0]
+        assignment: returnedAssignment
       });
     } catch (error) {
       await client.query('ROLLBACK');

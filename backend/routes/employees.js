@@ -1,7 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const pool = require('../config/database');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin, requireDeletePermission, requireEditPermission, requireDeletePermissionByEntity } = require('../middleware/auth');
+const { logActivity, generateDescription } = require('../utils/activityLogger');
 
 const router = express.Router();
 
@@ -102,9 +103,24 @@ router.post('/', [
       [employee_id, full_name, email, department, position, phone]
     );
 
+    const newEmployee = result.rows[0];
+
+    // Ghi log hoạt động
+    await logActivity({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'create',
+      entityType: 'employee',
+      entityId: newEmployee.id,
+      entityName: `${newEmployee.employee_id} - ${newEmployee.full_name}`,
+      newValues: newEmployee,
+      description: generateDescription('create', 'employee', `${newEmployee.employee_id} - ${newEmployee.full_name}`),
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
+
     res.status(201).json({
       message: 'Tạo nhân viên thành công',
-      employee: result.rows[0]
+      employee: newEmployee
     });
   } catch (error) {
     console.error('Create employee error:', error);
@@ -115,7 +131,7 @@ router.post('/', [
 // Cập nhật nhân viên
 router.put('/:id', [
   authenticateToken,
-  requireAdmin,
+  requireEditPermission('employee'),
   body('full_name').notEmpty().withMessage('Họ tên là bắt buộc'),
   body('email').isEmail().withMessage('Email không hợp lệ')
 ], async (req, res) => {
@@ -138,6 +154,13 @@ router.put('/:id', [
       return res.status(400).json({ message: 'Email đã tồn tại' });
     }
 
+    // Lấy giá trị cũ trước khi cập nhật
+    const oldEmployeeResult = await pool.query('SELECT * FROM employees WHERE id = $1', [id]);
+    if (oldEmployeeResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy nhân viên' });
+    }
+    const oldEmployee = oldEmployeeResult.rows[0];
+
     const result = await pool.query(
       `UPDATE employees 
        SET full_name = $1, email = $2, department = $3, position = $4, phone = $5, updated_at = CURRENT_TIMESTAMP
@@ -150,9 +173,25 @@ router.put('/:id', [
       return res.status(404).json({ message: 'Không tìm thấy nhân viên' });
     }
 
+    const updatedEmployee = result.rows[0];
+
+    // Ghi log hoạt động
+    await logActivity({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'update',
+      entityType: 'employee',
+      entityId: updatedEmployee.id,
+      entityName: `${updatedEmployee.employee_id} - ${updatedEmployee.full_name}`,
+      oldValues: oldEmployee,
+      newValues: updatedEmployee,
+      description: generateDescription('update', 'employee', `${updatedEmployee.employee_id} - ${updatedEmployee.full_name}`),
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
+
     res.json({
       message: 'Cập nhật nhân viên thành công',
-      employee: result.rows[0]
+      employee: updatedEmployee
     });
   } catch (error) {
     console.error('Update employee error:', error);
@@ -161,9 +200,16 @@ router.put('/:id', [
 });
 
 // Xóa nhân viên
-router.delete('/:id', [authenticateToken, requireAdmin], async (req, res) => {
+router.delete('/:id', [authenticateToken, requireDeletePermissionByEntity('employee')], async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Lấy thông tin nhân viên trước khi xóa để ghi log
+    const employeeResult = await pool.query('SELECT * FROM employees WHERE id = $1', [id]);
+    if (employeeResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy nhân viên' });
+    }
+    const employee = employeeResult.rows[0];
 
     // Kiểm tra nhân viên có đang sử dụng tài sản không
     const activeAssignments = await pool.query(
@@ -182,6 +228,19 @@ router.delete('/:id', [authenticateToken, requireAdmin], async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Không tìm thấy nhân viên' });
     }
+
+    // Ghi log hoạt động
+    await logActivity({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'delete',
+      entityType: 'employee',
+      entityId: employee.id,
+      entityName: `${employee.employee_id} - ${employee.full_name}`,
+      oldValues: employee,
+      description: generateDescription('delete', 'employee', `${employee.employee_id} - ${employee.full_name}`),
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
 
     res.json({ message: 'Xóa nhân viên thành công' });
   } catch (error) {
