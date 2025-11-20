@@ -1,6 +1,11 @@
 # Backend Dockerfile
 FROM node:18-alpine
 
+# Cài đặt các công cụ cần thiết
+RUN apk add --no-cache \
+    postgresql-client \
+    bash
+
 # Tạo thư mục app
 WORKDIR /app
 
@@ -8,7 +13,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Cài đặt dependencies
-RUN npm ci
+RUN npm ci --only=production
 
 # Copy source code
 COPY . .
@@ -16,12 +21,16 @@ COPY . .
 # Tạo thư mục cho database schema
 RUN mkdir -p database
 
+# Cấp quyền cho script chờ database
+RUN chmod +x /app/wait-for-db.sh
+
 # Expose port
 EXPOSE 5000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
-# Start application
+# Start application với script chờ database
+ENTRYPOINT ["/app/wait-for-db.sh"]
 CMD ["npm", "start"]

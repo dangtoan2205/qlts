@@ -1,23 +1,29 @@
+version: '3.8'
+
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: qlts_postgres
     environment:
       POSTGRES_DB: qlts_assets
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d qlts_assets"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    networks:
+      - qlts_network
 
   # Backend API
   backend:
@@ -32,7 +38,7 @@ services:
       DB_NAME: qlts_assets
       DB_USER: postgres
       DB_PASSWORD: password
-      JWT_SECRET: qlts_jwt_secret_key_2024
+      JWT_SECRET: qlts_jwt_secret_key_2024_change_in_production
       PORT: 5000
     ports:
       - "5000:5000"
@@ -45,6 +51,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
+    networks:
+      - qlts_network
 
   # Frontend React App
   frontend:
@@ -63,6 +72,14 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
+    networks:
+      - qlts_network
+
+networks:
+  qlts_network:
+    driver: bridge
 
 volumes:
   postgres_data:
+    driver: local
