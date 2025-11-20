@@ -16,6 +16,8 @@ const Header = ({ collapsed, setCollapsed }) => {
 
   const handleLogout = () => {
     logout();
+    // Reload trang để đảm bảo giao diện đăng nhập hiển thị đúng
+    window.location.href = '/login';
   };
 
   const userMenuItems = [

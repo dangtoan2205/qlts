@@ -15,7 +15,9 @@ import {
   Popconfirm,
   Row,
   Col,
-  Typography
+  Typography,
+  Dropdown,
+  Checkbox
 } from 'antd';
 import {
   PlusOutlined,
@@ -23,7 +25,8 @@ import {
   DeleteOutlined,
   SearchOutlined,
   ReloadOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -54,6 +57,21 @@ const AssetManagement = () => {
   const [editingAsset, setEditingAsset] = useState(null);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [form] = Form.useForm();
+
+  // Khởi tạo state cho các cột được chọn (mặc định hiển thị các cột hiện tại)
+  const getDefaultVisibleColumns = () => {
+    const saved = localStorage.getItem('assetVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return ['asset_code', 'asset_name', 'type_name', 'brand', 'model', 'status'];
+      }
+    }
+    return ['asset_code', 'asset_name', 'type_name', 'brand', 'model', 'status'];
+  };
+
+  const [visibleColumns, setVisibleColumns] = useState(getDefaultVisibleColumns);
 
   useEffect(() => {
     fetchAssets();
@@ -168,7 +186,14 @@ const AssetManagement = () => {
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
-  const columns = [
+  // Xử lý thay đổi cột hiển thị
+  const handleColumnVisibilityChange = (checkedValues) => {
+    setVisibleColumns(checkedValues);
+    localStorage.setItem('assetVisibleColumns', JSON.stringify(checkedValues));
+  };
+
+  // Định nghĩa tất cả các cột
+  const allColumns = [
     {
       title: 'Mã tài sản',
       dataIndex: 'asset_code',
@@ -202,23 +227,43 @@ const AssetManagement = () => {
       render: getStatusTag,
     },
     {
-      title: 'Người sử dụng',
-      dataIndex: 'assigned_to_name',
-      key: 'assigned_to_name',
-      render: (text, record) => (
-        text ? (
-          <div>
-            <div>{text}</div>
-            <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
-              {record.assigned_to_id}
-            </div>
-          </div>
-        ) : '-'
-      ),
+      title: 'Số Serial',
+      dataIndex: 'serial_number',
+      key: 'serial_number',
+      render: (text) => text || '-',
+    },
+    {
+      title: 'Ngày mua',
+      dataIndex: 'purchase_date',
+      key: 'purchase_date',
+      render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : '-',
+    },
+    {
+      title: 'Giá mua',
+      dataIndex: 'purchase_price',
+      key: 'purchase_price',
+      render: (price) => price ? new Intl.NumberFormat('vi-VN').format(price) + ' đ' : '-',
+    },
+    {
+      title: 'Vị trí',
+      dataIndex: 'location',
+      key: 'location',
+      render: (text) => text || '-',
+    },
+    {
+      title: 'Ghi chú',
+      dataIndex: 'notes',
+      key: 'notes',
+      render: (text) => text ? (
+        <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={text}>
+          {text}
+        </div>
+      ) : '-',
     },
     {
       title: 'Hành động',
       key: 'actions',
+      fixed: 'right',
       render: (_, record) => (
         <Space>
           <Button
@@ -253,6 +298,42 @@ const AssetManagement = () => {
       ),
     },
   ];
+
+  // Lọc các cột dựa trên lựa chọn
+  const visibleColumnsData = allColumns.filter(col => 
+    col.key === 'actions' || visibleColumns.includes(col.key)
+  );
+
+  // Menu dropdown để chọn cột hiển thị
+  const columnMenu = {
+    items: [
+      {
+        key: 'columns',
+        label: (
+          <div style={{ padding: '8px 0' }}>
+            <div style={{ marginBottom: 8, fontWeight: 500 }}>Chọn cột hiển thị:</div>
+            <Checkbox.Group
+              value={visibleColumns}
+              onChange={handleColumnVisibilityChange}
+              style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+            >
+              <Checkbox value="asset_code">Mã tài sản</Checkbox>
+              <Checkbox value="asset_name">Tên tài sản</Checkbox>
+              <Checkbox value="type_name">Loại tài sản</Checkbox>
+              <Checkbox value="status">Trạng thái</Checkbox>
+              <Checkbox value="brand">Thương hiệu</Checkbox>
+              <Checkbox value="model">Model</Checkbox>
+              <Checkbox value="serial_number">Số Serial</Checkbox>
+              <Checkbox value="purchase_date">Ngày mua</Checkbox>
+              <Checkbox value="purchase_price">Giá mua</Checkbox>
+              <Checkbox value="location">Vị trí</Checkbox>
+              <Checkbox value="notes">Ghi chú</Checkbox>
+            </Checkbox.Group>
+          </div>
+        ),
+      },
+    ],
+  };
 
   // Nếu có tài sản được chọn, hiển thị lịch sử
   if (selectedAsset) {
@@ -322,8 +403,13 @@ const AssetManagement = () => {
           </Row>
         </Form>
 
-        {canCreate(user, 'asset') && (
-          <div style={{ marginBottom: 16, textAlign: 'right' }}>
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Dropdown menu={columnMenu} trigger={['click']} placement="bottomLeft">
+            <Button icon={<SettingOutlined />}>
+              Hiển thị cột
+            </Button>
+          </Dropdown>
+          {canCreate(user, 'asset') && (
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -331,11 +417,11 @@ const AssetManagement = () => {
             >
               Thêm tài sản
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         <Table
-          columns={columns}
+          columns={visibleColumnsData}
           dataSource={assets}
           rowKey="id"
           loading={loading}
