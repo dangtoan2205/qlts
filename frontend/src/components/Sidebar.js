@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Modal, Radio, Button, message } from 'antd';
+import { Layout, Menu, Modal, Radio, Button, message, Upload, Select, Alert } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined,
@@ -7,7 +7,8 @@ import {
   TeamOutlined,
   SwapOutlined,
   SettingOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,6 +22,10 @@ const Sidebar = ({ collapsed }) => {
   const [exportModalVisible, setExportModalVisible] = useState(false);
   const [exportType, setExportType] = useState('all');
   const [exporting, setExporting] = useState(false);
+  const [importModalVisible, setImportModalVisible] = useState(false);
+  const [importType, setImportType] = useState('assets');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   const menuItems = [
     {
@@ -53,11 +58,19 @@ const Sidebar = ({ collapsed }) => {
       icon: <DownloadOutlined />,
       label: 'Export dữ liệu',
     },
+    {
+      key: 'import',
+      icon: <UploadOutlined />,
+      label: 'Import dữ liệu',
+    },
   ];
 
   const handleMenuClick = ({ key }) => {
     if (key === 'export') {
       setExportModalVisible(true);
+    } else if (key === 'import') {
+      setImportModalVisible(true);
+      setImportResult(null);
     } else {
       navigate(key);
     }
@@ -106,6 +119,40 @@ const Sidebar = ({ collapsed }) => {
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleImport = async (file) => {
+    try {
+      setImporting(true);
+      setImportResult(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const url = `/api/import/${importType}`;
+      const response = await axios.post(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      setImportResult(response.data);
+      message.success(`Import thành công: ${response.data.success} bản ghi, ${response.data.errors} lỗi`);
+      
+      // Reload trang sau 2 giây nếu import thành công
+      if (response.data.success > 0) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      message.error(error.response?.data?.message || 'Lỗi khi import dữ liệu');
+    } finally {
+      setImporting(false);
+    }
+    return false; // Ngăn upload tự động
   };
 
   return (
@@ -183,6 +230,81 @@ const Sidebar = ({ collapsed }) => {
             </div>
           </Radio>
         </Radio.Group>
+      </Modal>
+
+      <Modal
+        title="Import dữ liệu"
+        open={importModalVisible}
+        onCancel={() => {
+          setImportModalVisible(false);
+          setImportResult(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setImportModalVisible(false);
+            setImportResult(null);
+          }}>
+            Đóng
+          </Button>
+        ]}
+        width={600}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>Chọn loại dữ liệu import:</div>
+          <Select
+            value={importType}
+            onChange={setImportType}
+            style={{ width: '100%' }}
+            disabled={importing}
+          >
+            <Select.Option value="assets">Tài sản</Select.Option>
+            <Select.Option value="employees">Nhân viên</Select.Option>
+          </Select>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>Chọn file Excel:</div>
+          <Upload
+            accept=".xlsx,.xls"
+            beforeUpload={handleImport}
+            showUploadList={false}
+            disabled={importing}
+          >
+            <Button
+              icon={<UploadOutlined />}
+              loading={importing}
+              disabled={importing}
+              type="primary"
+            >
+              {importing ? 'Đang import...' : 'Chọn file Excel'}
+            </Button>
+          </Upload>
+          <div style={{ marginTop: 8, fontSize: '12px', color: '#8c8c8c' }}>
+            Chỉ chấp nhận file .xlsx hoặc .xls. File phải có format giống file export.
+          </div>
+        </div>
+
+        {importResult && (
+          <div>
+            <Alert
+              message={`Import hoàn tất: ${importResult.success} thành công, ${importResult.errors} lỗi`}
+              type={importResult.errors > 0 ? 'warning' : 'success'}
+              style={{ marginBottom: 16 }}
+            />
+            {importResult.details && importResult.details.errors.length > 0 && (
+              <div>
+                <div style={{ fontWeight: 500, marginBottom: 8 }}>Chi tiết lỗi:</div>
+                <div style={{ maxHeight: 200, overflowY: 'auto', fontSize: '12px' }}>
+                  {importResult.details.errors.map((error, index) => (
+                    <div key={index} style={{ color: 'red', marginBottom: 4 }}>
+                      Dòng {error.row}: {error.message}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </Sider>
   );
